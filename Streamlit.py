@@ -53,7 +53,6 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
-@st.cache_data(ttl=900)
 def get_data():
     df = pd.read_excel('Inventory Distribution model.xlsx','Base Data')
     return df
