@@ -64,7 +64,7 @@ def user_input(df):
 
     # Column 1: Minimum inventory days and warehouses
     with col1:
-        x = st.text_input('Min Inventory Days')
+        x = st.number_input('Min Inventory Days')
         warehouses = df['warehouse'].unique()
         selected_warehouses = st.multiselect('Select Warehouses', warehouses, None)
 
