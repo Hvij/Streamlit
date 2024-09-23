@@ -1,9 +1,14 @@
 import streamlit as st
 import numpy as np
 import pandas as pd
+import altair as alt
+
 
 # Set the page layout to wide
 st.set_page_config(layout="wide")
+
+alt.themes.enable("dark")
+
 
 # CSS styling
 st.markdown("""
