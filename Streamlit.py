@@ -59,29 +59,28 @@ def get_data():
     return df
 
 def user_input(df):
+    # Create three columns
+    col1, col2, col3 = st.columns(3)
 
-    # Sidebar slider for minimum inventory days
-    x = st.slider('Min_inv_days', 0, 30, 15, 1)
+    # Column 1: Minimum inventory days and warehouses
+    with col1:
+        x = st.text_input('Min Inventory Days')
+        warehouses = df['warehouse'].unique()
+        selected_warehouses = st.multiselect('Select Warehouses', warehouses, None)
 
-    # Search and filter for warehouses
-    warehouses = df['warehouse'].unique()
-    selected_warehouses = st.multiselect('Select Warehouses', warehouses, None)
-    
-    # Search and filter for product variants
-    variants = df['product_variant_id'].unique()
-    selected_variants = st.multiselect('Select Variant IDs', variants,None)
+    # Column 2: Product variants and brands
+    with col2:
+        variants = df['product_variant_id'].unique()
+        selected_variants = st.multiselect('Select Variant IDs', variants, None)
+        brands = df['brand'].unique()
+        selected_brands = st.multiselect('Select Brands', brands, None)
 
-    # Search and filter for Brand
-    brands = df['brand'].unique()
-    selected_brands = st.multiselect('Select Brands', brands,None)
-
-    # Search and filter for channel
-    channel = df['channel'].unique()
-    selected_channel = st.multiselect('Select channels', channel,None)
-
-    # Search and filter for category
-    category = df['category'].unique()
-    selected_category = st.multiselect('Select categories', category,None)
+    # Column 3: Channel and category
+    with col3:
+        channel = df['channel'].unique()
+        selected_channel = st.multiselect('Select Channels', channel, None)
+        category = df['category'].unique()
+        selected_category = st.multiselect('Select Categories', category, None)
 
     return x, selected_warehouses, selected_variants, selected_brands, selected_channel, selected_category
 
