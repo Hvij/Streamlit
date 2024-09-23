@@ -164,7 +164,7 @@ def pivot_table_dashboard(filtered_df):
         }
     )
     # Calculate days on inventory after pivot
-    pivot_df['Days of Inventory'] = (pivot_df['available_inventory']-pivot_df['booked_quantity'])/pivot_df['Projected Daily Demand']
+    pivot_df['Days of Inventory'] = pd.round((pivot_df['available_inventory']-pivot_df['booked_quantity'])/pivot_df['Projected Daily Demand'],2)
     
     # Rename columns for clarity
     pivot_df.columns = ['Inventory', 'Projected Daily Demand', 'Risk-Free Revenue', 'OOS Risk', 'Booked Quantity', 'Days of Inventory']
