@@ -88,12 +88,11 @@ def user_input(df):
 def Risk_rev(filtered_df, x):
     df = filtered_df
     # Adding New Columns
-    df['Total Revenue'] = df['last_30_day_revenue'] * (df['wd1'])/30
-    df['No Risk Revenue'] = np.where(df['wd1'] >= x, df['last_30_day_revenue'] * (df['wd1'] - x) / 30, 0)
-    df['Revenue at OOS Risk'] = np.where((df['wd1'] < x) & (df['wd2'] < x) & (df['nd1'] < x), df['last_30_day_revenue'] * (x - df['wd1']) / 30, 0)
-    df['Revenue at NRF Risk'] = np.where((df['wd1'] < x) & (df['wd2'] < x) & (df['nd1'] >= x), df['last_30_day_revenue'] * (x - df['wd1']) / 30, 0)
-    df['Revenue at FUD Risk'] = np.where((df['wd1'] < x) & (df['wd2'] >= x), df['last_30_day_revenue'] * (x - df['wd1']) / 30, 0)
-    df.round(2)
+    df['Total Revenue'] = (df['last_30_day_revenue'] * (df['wd1'])/30).round(2)
+    df['No Risk Revenue'] = np.round(np.where(df['wd1'] >= x, df['last_30_day_revenue'] * (df['wd1'] - x) / 30, 0), 2)
+    df['Revenue at OOS Risk'] = np.round(np.where((df['wd1'] < x) & (df['wd2'] < x) & (df['nd1'] < x), df['last_30_day_revenue'] * (x - df['wd1']) / 30, 0), 2)
+    df['Revenue at NRF Risk'] = np.round(np.where((df['wd1'] < x) & (df['wd2'] < x) & (df['nd1'] >= x), df['last_30_day_revenue'] * (x - df['wd1']) / 30, 0), 2)
+    df['Revenue at FUD Risk'] = np.round(np.where((df['wd1'] < x) & (df['wd2'] >= x), df['last_30_day_revenue'] * (x - df['wd1']) / 30, 0), 2)
     return df
 
 def net_risk_revenues(filtered_df):
@@ -146,7 +145,7 @@ def generate_filtered_tables(filtered_df):
 
 def pivot_table_dashboard(filtered_df):
     # Create a new column for projected daily demand
-    filtered_df['Projected Daily Demand'] = filtered_df['last_30_day_sale'] / 30
+    filtered_df['Projected Daily Demand'] = (filtered_df['last_30_day_sale'] / 30),round(2)
 
     # User selects whether to group by Brand, Warehouse, or Channel
     pivot_option = st.selectbox("Select Pivot Category", ['brand', 'warehouse', 'channel'])
@@ -165,13 +164,11 @@ def pivot_table_dashboard(filtered_df):
         }
     )
     # Calculate days on inventory after pivot
-    pivot_df['Days of Inventory'] = (pivot_df['available_inventory'] - pivot_df['booked_quantity']) / pivot_df['Projected Daily Demand']
+    pivot_df['Days of Inventory'] = ((pivot_df['available_inventory'] - pivot_df['booked_quantity']) / pivot_df['Projected Daily Demand']).round(2)
     
     # Rename columns for clarity
     pivot_df.columns = ['Inventory', 'Projected Daily Demand', 'Risk-Free Revenue', 'OOS Risk', 'Booked Quantity', 'Days of Inventory']
-    
-    pivot_df.round(2)
-    
+
     # Display the Pivot Table
     st.dataframe(pivot_df)
 
@@ -188,7 +185,7 @@ if __name__ == "__main__":
     filtered_df = filter(df, selected_warehouses, selected_variants, selected_brands, selected_channel, selected_category)
 
     filtered_df.round(2)
-
+    
     # Perform the risk revenue operations (add columns)
     filtered_df = Risk_rev(filtered_df, x)
 
