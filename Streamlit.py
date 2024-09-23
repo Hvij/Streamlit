@@ -88,7 +88,7 @@ def user_input(df):
 def Risk_rev(filtered_df, x):
     df = filtered_df
     # Adding New Columns
-    df['Total Revenue'] = np.round(df['last_30_day_revenue'] * (df['wd1'])/30, 2)
+    df['Total Revenue'] = (df['last_30_day_revenue'] * (df['wd1'])/30).round(2)
     df['No Risk Revenue'] = np.round(np.where(df['wd1'] >= x, df['last_30_day_revenue'] * (df['wd1'] - x) / 30, 0), 2)
     df['Revenue at OOS Risk'] = np.round(np.where((df['wd1'] < x) & (df['wd2'] < x) & (df['nd1'] < x), df['last_30_day_revenue'] * (x - df['wd1']) / 30, 0), 2)
     df['Revenue at NRF Risk'] = np.round(np.where((df['wd1'] < x) & (df['wd2'] < x) & (df['nd1'] >= x), df['last_30_day_revenue'] * (x - df['wd1']) / 30, 0), 2)
@@ -145,7 +145,7 @@ def generate_filtered_tables(filtered_df):
 
 def pivot_table_dashboard(filtered_df):
     # Create a new column for projected daily demand
-    filtered_df['Projected Daily Demand'] = filtered_df['last_30_day_sale'] / 30
+    filtered_df['Projected Daily Demand'] = (filtered_df['last_30_day_sale'] / 30).round(2)
 
     # User selects whether to group by Brand, Warehouse, or Channel
     pivot_option = st.selectbox("Select Pivot Category", ['brand', 'warehouse', 'channel'])
