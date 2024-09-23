@@ -145,7 +145,7 @@ def generate_filtered_tables(filtered_df):
 
 def pivot_table_dashboard(filtered_df):
     # Create a new column for projected daily demand
-    filtered_df['Projected Daily Demand'] = (filtered_df['last_30_day_sale'] / 30),round(2)
+    filtered_df['Projected Daily Demand'] = (filtered_df['last_30_day_sale'] / 30).round(2)
 
     # User selects whether to group by Brand, Warehouse, or Channel
     pivot_option = st.selectbox("Select Pivot Category", ['brand', 'warehouse', 'channel'])
