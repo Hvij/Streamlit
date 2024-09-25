@@ -12,8 +12,9 @@ def get_data():
     df_sto=pd.read_excel('Inventory Distribution model.xlsx','sto_transit')
     df_rto=pd.read_excel('Inventory Distribution model.xlsx','rto_transit')
     df_return=pd.read_excel('Inventory Distribution model.xlsx','pending_return_checkin')
+    df_inventory = pd.read_excel('Inventory Distribution model.xlsx', 'date_wise_inventory')  # New sheet
 
-    return df, df_putaway, df_sto, df_rto, df_return  # Return all 5 dataframes
+    return df, df_putaway, df_sto, df_rto, df_return, df_inventory
 
 def user_input(df):
     # Create three columns
@@ -63,13 +64,14 @@ def net_risk_revenues(filtered_df):
     }
     return net_rev
 
-def filter(df,df_putaway, df_sto, df_rto, df_return, selected_warehouses, selected_variants, selected_brands, selected_channel, selected_category):
+def filter(df,df_putaway, df_sto, df_rto, df_return, df_inventory, selected_warehouses, selected_variants, selected_brands, selected_channel, selected_category):
     # Start with the full DataFrame
     filtered_df = df
     filtered_putaway_df = df_putaway
     filtered_sto_df = df_sto
     filtered_rto_df = df_rto
     filtered_return_df = df_return
+    filtered_inventory = df_inventory
 
     # Apply filters if selections are made
     if selected_warehouses:
@@ -89,14 +91,16 @@ def filter(df,df_putaway, df_sto, df_rto, df_return, selected_warehouses, select
         filtered_sto_df = filtered_sto_df[filtered_sto_df['warehouse'].isin(selected_warehouses)]
         filtered_rto_df = filtered_rto_df[filtered_rto_df['warehouse'].isin(selected_warehouses)]
         filtered_return_df = filtered_return_df[filtered_return_df['warehouse'].isin(selected_warehouses)]
+        filtered_inventory = filtered_inventory[filtered_inventory['warehouse'].isin(selected_warehouses)]
 
     if selected_variants:
         filtered_putaway_df = filtered_putaway_df[filtered_putaway_df['product_variant_id'].isin(selected_variants)]
         filtered_sto_df = filtered_sto_df[filtered_sto_df['product_variant_id'].isin(selected_variants)]
         filtered_rto_df = filtered_rto_df[filtered_rto_df['product_variant_id'].isin(selected_variants)]
         filtered_return_df = filtered_return_df[filtered_return_df['product_variant_id'].isin(selected_variants)]
+        filtered_inventory = filtered_inventory[filtered_inventory['product_variant_id'].isin(selected_variants)]
 
-    return filtered_df, filtered_putaway_df, filtered_sto_df, filtered_rto_df, filtered_return_df
+    return filtered_df, filtered_putaway_df, filtered_sto_df, filtered_rto_df, filtered_return_df, filtered_inventory
 
 def generate_filtered_tables(filtered_df):
     # Generate tables under different risks after filters
@@ -146,10 +150,49 @@ def pivot_table_dashboard(filtered_df):
     # Display the Pivot Table
     st.dataframe(pivot_df)
 
+def plot_inventory_chart(filtered_inventory):
+    st.subheader("Date-wise Inventory Line Chart")
+    
+    if not filtered_inventory.empty:
+        try:
+            # Group by date and sum the inventory values
+            grouped_df = filtered_inventory.groupby('Date')['Inventory'].sum().reset_index()
+            
+            # Set 'Date' as the index for plotting
+            grouped_df['Date'] = pd.to_datetime(grouped_df['Date'], format='%d-%m-%Y', errors='coerce')  # Handle errors in date format
+            grouped_df.set_index('Date', inplace=True)
+            
+            # Plot the line chart using Streamlit
+            st.line_chart(grouped_df['Inventory'])
+        except Exception as e:
+            st.error(f"Error plotting chart: {e}")
+    else:
+        st.write("No data available for the selected filters.")
+
+def add_risk_revenues(target_df, filtered_df):
+    # Define the risk columns you want to merge from filtered_df
+    risk_columns = ['No Risk Revenue', 'Revenue at OOS Risk', 'Revenue at NRF Risk', 'Revenue at FUD Risk']
+    
+    # Ensure that the risk columns exist in filtered_df before proceeding
+    existing_risk_columns = [col for col in risk_columns if col in filtered_df.columns]
+
+    if not existing_risk_columns:
+        st.write("No risk columns found in the filtered DataFrame.")
+        return target_df
+    
+    try:
+        # Perform a LEFT JOIN from target_df (left) to filtered_df (right) based on product_variant_id and warehouse
+        target_df = target_df.merge(filtered_df[['product_variant_id', 'warehouse'] + existing_risk_columns],
+                                    on=['product_variant_id', 'warehouse'], how='left')
+    except KeyError as e:
+        st.write(f"KeyError: {e}")
+    
+    return target_df
+
 
 if __name__ == "__main__":
 
-    df, df_putaway, df_sto, df_rto, df_return = get_data()
+    df, df_putaway, df_sto, df_rto, df_return, df_inventory = get_data()
 
     df = df.round(2)
 
@@ -157,7 +200,7 @@ if __name__ == "__main__":
     x, selected_warehouses, selected_variants, selected_brands, selected_channel, selected_category = user_input(df)
 
     # Filter DataFrame based on user selections
-    filtered_df, filtered_putaway_df, filtered_sto_df, filtered_rto_df, filtered_return_df = filter(df, df_putaway, df_sto, df_rto, df_return, selected_warehouses, selected_variants, selected_brands, selected_channel, selected_category)
+    filtered_df, filtered_putaway_df, filtered_sto_df, filtered_rto_df, filtered_return_df, filtered_inventory = filter(df, df_putaway, df_sto, df_rto, df_return, df_inventory, selected_warehouses, selected_variants, selected_brands, selected_channel, selected_category)
 
     filtered_df = filtered_df.round(2)
 
@@ -172,6 +215,7 @@ if __name__ == "__main__":
 
     tab1, tab2, tab3 = st.tabs(["Overview","Risk Type", "Actions"])
      # Fetch cached data
+
 
     with tab1:
 
@@ -219,8 +263,8 @@ if __name__ == "__main__":
         # Display Pivot Table based on selection
         pivot_table_dashboard(filtered_df)
 
-        # Optionally display the raw data with new columns
-        st.write("Raw Data from Redshift with Risk Revenues:", df)
+         # Plot the inventory chart
+        plot_inventory_chart(filtered_inventory)  
 
     with tab2:
         
@@ -228,17 +272,28 @@ if __name__ == "__main__":
             st.subheader(title)
             st.dataframe(table_df)  # Display dataframe
 
+        
+        # Optionally display the raw data with new columns
+        st.write("Raw Data from Redshift with Risk Revenues:", df)
     
     with tab3:
 
-        st.subheader("Putaway Data")
-        st.dataframe(filtered_putaway_df)
+        # Add risk revenue columns to Putaway Data
+        st.subheader("Pending Putaway Data")
+        putaway_with_risk = add_risk_revenues(filtered_putaway_df,filtered_df)
+        st.dataframe(putaway_with_risk)
 
+        # Add risk revenue columns to STO Transit Data
         st.subheader("STO Transit Data")
-        st.dataframe(filtered_sto_df)
+        sto_with_risk = add_risk_revenues(filtered_sto_df,filtered_df)
+        st.dataframe(sto_with_risk)
 
+        # Add risk revenue columns to RTO Transit Data
         st.subheader("RTO Transit Data")
-        st.dataframe(filtered_rto_df)
+        rto_with_risk = add_risk_revenues( filtered_rto_df,filtered_df)
+        st.dataframe(rto_with_risk)
 
+        # Add risk revenue columns to Pending Return Check-in Data
         st.subheader("Pending Return Check-in Data")
-        st.dataframe(filtered_return_df)
+        return_with_risk = add_risk_revenues( filtered_return_df,filtered_df)
+        st.dataframe(return_with_risk)
