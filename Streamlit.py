@@ -8,7 +8,12 @@ st.set_page_config(layout="wide")
 @st.cache_data(ttl=900)
 def get_data():
     df = pd.read_excel('Inventory Distribution model.xlsx','Base Data')
-    return df
+    df_putaway=pd.read_excel('Inventory Distribution model.xlsx','Pending_putaway')
+    df_sto=pd.read_excel('Inventory Distribution model.xlsx','sto_transit')
+    df_rto=pd.read_excel('Inventory Distribution model.xlsx','rto_transit')
+    df_return=pd.read_excel('Inventory Distribution model.xlsx','pending_return_checkin')
+
+    return df, df_putaway, df_sto, df_rto, df_return  # Return all 5 dataframes
 
 def user_input(df):
     # Create three columns
@@ -58,9 +63,13 @@ def net_risk_revenues(filtered_df):
     }
     return net_rev
 
-def filter(df, selected_warehouses, selected_variants, selected_brands, selected_channel, selected_category):
+def filter(df,df_putaway, df_sto, df_rto, df_return, selected_warehouses, selected_variants, selected_brands, selected_channel, selected_category):
     # Start with the full DataFrame
     filtered_df = df
+    filtered_putaway_df = df_putaway
+    filtered_sto_df = df_sto
+    filtered_rto_df = df_rto
+    filtered_return_df = df_return
 
     # Apply filters if selections are made
     if selected_warehouses:
@@ -74,7 +83,20 @@ def filter(df, selected_warehouses, selected_variants, selected_brands, selected
     if selected_category:
         filtered_df = filtered_df[filtered_df['category'].isin(selected_category)]
 
-    return filtered_df  # Return the filtered DataFrame, not a list of conditions
+    # Apply filters to the other DataFrames (only based on warehouse and variant)
+    if selected_warehouses:
+        filtered_putaway_df = filtered_putaway_df[filtered_putaway_df['warehouse'].isin(selected_warehouses)]
+        filtered_sto_df = filtered_sto_df[filtered_sto_df['warehouse'].isin(selected_warehouses)]
+        filtered_rto_df = filtered_rto_df[filtered_rto_df['warehouse'].isin(selected_warehouses)]
+        filtered_return_df = filtered_return_df[filtered_return_df['warehouse'].isin(selected_warehouses)]
+
+    if selected_variants:
+        filtered_putaway_df = filtered_putaway_df[filtered_putaway_df['product_variant_id'].isin(selected_variants)]
+        filtered_sto_df = filtered_sto_df[filtered_sto_df['product_variant_id'].isin(selected_variants)]
+        filtered_rto_df = filtered_rto_df[filtered_rto_df['product_variant_id'].isin(selected_variants)]
+        filtered_return_df = filtered_return_df[filtered_return_df['product_variant_id'].isin(selected_variants)]
+
+    return filtered_df, filtered_putaway_df, filtered_sto_df, filtered_rto_df, filtered_return_df
 
 def generate_filtered_tables(filtered_df):
     # Generate tables under different risks after filters
@@ -127,17 +149,17 @@ def pivot_table_dashboard(filtered_df):
 
 if __name__ == "__main__":
 
-    df = get_data()
+    df, df_putaway, df_sto, df_rto, df_return = get_data()
 
-    df.round(2)
+    df = df.round(2)
 
      # Get user inputs
     x, selected_warehouses, selected_variants, selected_brands, selected_channel, selected_category = user_input(df)
 
     # Filter DataFrame based on user selections
-    filtered_df = filter(df, selected_warehouses, selected_variants, selected_brands, selected_channel, selected_category)
+    filtered_df, filtered_putaway_df, filtered_sto_df, filtered_rto_df, filtered_return_df = filter(df, df_putaway, df_sto, df_rto, df_return, selected_warehouses, selected_variants, selected_brands, selected_channel, selected_category)
 
-    filtered_df.round(2)
+    filtered_df = filtered_df.round(2)
 
     # Perform the risk revenue operations (add columns)
     filtered_df = Risk_rev(filtered_df, x)
@@ -148,7 +170,7 @@ if __name__ == "__main__":
     # Generate filtered tables
     tables = generate_filtered_tables(filtered_df)
 
-    tab1, tab2 = st.tabs(["Overview", "Actions"])
+    tab1, tab2, tab3 = st.tabs(["Overview","Risk Type", "Actions"])
      # Fetch cached data
 
     with tab1:
@@ -192,17 +214,6 @@ if __name__ == "__main__":
                 st.metric(label="Net No Risk Revenue", value="0%", delta="No Revenue")
                 st.metric(label="Net FUD Risk Revenue", value="0%", delta="No Revenue")
 
-
-        # Create three columns to display tables
-        table_cols = st.columns(3)
-
-        # Display tables in three columns
-        for i, (title, table_df) in enumerate(tables.items()):
-            col = table_cols[i % 3]  # This ensures tables are printed across three columns in turn
-            with col:
-                st.subheader(title)
-                st.dataframe(table_df)  # Display dataframe
-
         st.subheader("Inventory Dashboard - Pivot Table")
 
         # Display Pivot Table based on selection
@@ -212,5 +223,22 @@ if __name__ == "__main__":
         st.write("Raw Data from Redshift with Risk Revenues:", df)
 
     with tab2:
-        st.write("Hello")
         
+        for title, table_df in tables.items():
+            st.subheader(title)
+            st.dataframe(table_df)  # Display dataframe
+
+    
+    with tab3:
+
+        st.subheader("Putaway Data")
+        st.dataframe(filtered_putaway_df)
+
+        st.subheader("STO Transit Data")
+        st.dataframe(filtered_sto_df)
+
+        st.subheader("RTO Transit Data")
+        st.dataframe(filtered_rto_df)
+
+        st.subheader("Pending Return Check-in Data")
+        st.dataframe(filtered_return_df)
