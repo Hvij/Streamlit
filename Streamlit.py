@@ -5,54 +5,6 @@ import pandas as pd
 # Set the page layout to wide
 st.set_page_config(layout="wide")
 
-# # CSS styling
-# st.markdown("""
-# <style>
-
-# [data-testid="block-container"] {
-#     padding-left: 2rem;
-#     padding-right: 2rem;
-#     padding-top: 1rem;
-#     padding-bottom: 0rem;
-#     margin-bottom: -7rem;
-# }
-
-# [data-testid="stVerticalBlock"] {
-#     padding-left: 0rem;
-#     padding-right: 0rem;
-# }
-
-# [data-testid="stMetric"] {
-#     background-color: #393939;
-#     text-align: center;
-#     padding: 15px 0;
-# }
-
-# [data-testid="stMetricLabel"] {
-#   display: flex;
-#   justify-content: center;
-#   align-items: center;
-# }
-
-# [data-testid="stMetricDeltaIcon-Up"] {
-#     position: relative;
-#     left: 38%;
-#     -webkit-transform: translateX(-50%);
-#     -ms-transform: translateX(-50%);
-#     transform: translateX(-50%);
-# }
-
-# [data-testid="stMetricDeltaIcon-Down"] {
-#     position: relative;
-#     left: 38%;
-#     -webkit-transform: translateX(-50%);
-#     -ms-transform: translateX(-50%);
-#     transform: translateX(-50%);
-# }
-
-# </style>
-# """, unsafe_allow_html=True)
-
 @st.cache_data(ttl=900)
 def get_data():
     df = pd.read_excel('Inventory Distribution model.xlsx','Base Data')
@@ -60,11 +12,12 @@ def get_data():
 
 def user_input(df):
     # Create three columns
+    st.subheader('Filters')
     col1, col2, col3 = st.columns(3)
 
     # Column 1: Minimum inventory days and warehouses
     with col1:
-        x = st.number_input('Min Inventory Days')
+        x = st.number_input('Min Inventory Days', min_value=0, value=15, step=1)
         warehouses = df['warehouse'].unique()
         selected_warehouses = st.multiselect('Select Warehouses', warehouses, None)
 
@@ -138,12 +91,11 @@ def generate_filtered_tables(filtered_df):
     if filtered_df['Revenue at FUD Risk'].gt(0).any():
         fud_risk_df = filtered_df[filtered_df['Revenue at FUD Risk'] > 0][['product_variant_id', 'warehouse', 'Revenue at FUD Risk']]
         dataframes['Revenue at FUD Risk'] = fud_risk_df
-
+    
     return dataframes
 
-
 def pivot_table_dashboard(filtered_df):
-    # Create a new column for projected daily demand
+    # Create a new column for projected daily demand and round it
     filtered_df['Projected Daily Demand'] = (filtered_df['last_30_day_sale'] / 30).round(2)
 
     # User selects whether to group by Brand, Warehouse, or Channel
@@ -162,7 +114,8 @@ def pivot_table_dashboard(filtered_df):
             'booked_quantity': 'sum'
         }
     )
-    # Calculate days on inventory after pivot
+
+    # Calculate days on inventory after pivot and round to 2 decimal places
     pivot_df['Days of Inventory'] = ((pivot_df['available_inventory'] - pivot_df['booked_quantity']) / pivot_df['Projected Daily Demand']).round(2)
     
     # Rename columns for clarity
@@ -170,6 +123,7 @@ def pivot_table_dashboard(filtered_df):
 
     # Display the Pivot Table
     st.dataframe(pivot_df)
+
 
 if __name__ == "__main__":
 
@@ -184,7 +138,7 @@ if __name__ == "__main__":
     filtered_df = filter(df, selected_warehouses, selected_variants, selected_brands, selected_channel, selected_category)
 
     filtered_df.round(2)
-    
+
     # Perform the risk revenue operations (add columns)
     filtered_df = Risk_rev(filtered_df, x)
 
@@ -247,9 +201,9 @@ if __name__ == "__main__":
             col = table_cols[i % 3]  # This ensures tables are printed across three columns in turn
             with col:
                 st.subheader(title)
-                st.dataframe(table_df)
+                st.dataframe(table_df)  # Display dataframe
 
-        st.title("Inventory Dashboard - Pivot Table")
+        st.subheader("Inventory Dashboard - Pivot Table")
 
         # Display Pivot Table based on selection
         pivot_table_dashboard(filtered_df)
@@ -259,3 +213,4 @@ if __name__ == "__main__":
 
     with tab2:
         st.write("Hello")
+        
