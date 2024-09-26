@@ -43,24 +43,24 @@ def user_input(df):
 
     return x, selected_warehouses, selected_variants, selected_brands, selected_channel, selected_category
 
-def Risk_rev(filtered_df, x):
-    df = filtered_df
+def Risk_rev(df, x):
     # Adding New Columns
-    df['Total Revenue'] = (df['last_30_day_revenue'] * (df['wd1'])/30).round(2)
-    df['No Risk Revenue'] = np.round(np.where(df['wd1'] >= x, df['last_30_day_revenue'] * (df['wd1'] - x) / 30, 0), 2)
-    df['Revenue at OOS Risk'] = np.round(np.where((df['wd1'] < x) & (df['wd2'] < x) & (df['nd1'] < x), df['last_30_day_revenue'] * (x - df['wd1']) / 30, 0), 2)
-    df['Revenue at NRF Risk'] = np.round(np.where((df['wd1'] < x) & (df['wd2'] < x) & (df['nd1'] >= x), df['last_30_day_revenue'] * (x - df['wd1']) / 30, 0), 2)
-    df['Revenue at FUD Risk'] = np.round(np.where((df['wd1'] < x) & (df['wd2'] >= x), df['last_30_day_revenue'] * (x - df['wd1']) / 30, 0), 2)
+    df['Total Revenue'] = df['last_30_day_revenue'] * (df['wd1'])/30
+    df['No Risk Revenue'] = np.where(df['wd1'] >= x, df['last_30_day_revenue'] * (df['wd1'] - x) / 30, 0)
+    df['Revenue at OOS Risk'] = np.where((df['wd1'] < x) & (df['wd2'] < x) & (df['nd1'] < x), df['last_30_day_revenue'] * (x - df['wd1']) / 30, 0)
+    df['Revenue at NRF Risk'] = np.where((df['wd1'] < x) & (df['wd2'] < x) & (df['nd1'] >= x), df['last_30_day_revenue'] * (x - df['wd1']) / 30, 0)
+    df['Revenue at FUD Risk'] = np.where((df['wd1'] < x) & (df['wd2'] >= x), df['last_30_day_revenue'] * (x - df['wd1']) / 30, 0)
+    df = df.round(2)
     return df
 
-def net_risk_revenues(filtered_df):
+def net_risk_revenues(df):
     # Calculation of net revenues under different risks without filters
     net_rev = {
-        'Net Revenue': filtered_df['Total Revenue'].sum(),
-        'Net_NO_risk_rev': filtered_df['No Risk Revenue'].sum(),
-        'Net_OOS_risk_rev': filtered_df['Revenue at OOS Risk'].sum(),
-        'Net_NRF_risk_rev': filtered_df['Revenue at NRF Risk'].sum(),
-        'Net_FUD_risk_rev': filtered_df['Revenue at FUD Risk'].sum()
+        'Net Revenue': df['Total Revenue'].sum(),
+        'Net_NO_risk_rev': df['No Risk Revenue'].sum(),
+        'Net_OOS_risk_rev': df['Revenue at OOS Risk'].sum(),
+        'Net_NRF_risk_rev': df['Revenue at NRF Risk'].sum(),
+        'Net_FUD_risk_rev': df['Revenue at FUD Risk'].sum()
     }
     return net_rev
 
@@ -120,16 +120,16 @@ def generate_filtered_tables(filtered_df):
     
     return dataframes
 
-def pivot_table_dashboard(filtered_df):
+def pivot_table_dashboard(df):
     # Create a new column for projected daily demand and round it
-    filtered_df['Projected Daily Demand'] = (filtered_df['last_30_day_sale'] / 30).round(2)
+    df['Projected Daily Demand'] = (df['last_30_day_sale'] / 30).round(2)
 
     # User selects whether to group by Brand, Warehouse, or Channel
     pivot_option = st.selectbox("Select Pivot Category", ['brand', 'warehouse', 'channel'])
 
     # Create Pivot Table
     pivot_df = pd.pivot_table(
-        filtered_df,
+        df,
         index=pivot_option,
         values=['available_inventory', 'Projected Daily Demand', 'No Risk Revenue', 'Revenue at OOS Risk', 'booked_quantity'],
         aggfunc={
@@ -179,15 +179,67 @@ def add_risk_revenues(target_df, filtered_df):
     if not existing_risk_columns:
         st.write("No risk columns found in the filtered DataFrame.")
         return target_df
-    
+
     try:
-        # Perform a LEFT JOIN from target_df (left) to filtered_df (right) based on product_variant_id and warehouse
-        target_df = target_df.merge(filtered_df[['product_variant_id', 'warehouse'] + existing_risk_columns],
-                                    on=['product_variant_id', 'warehouse'], how='left')
+        # Calculate the revenue per sale
+        revenue_per_sale = filtered_df['last_30_day_revenue'] / filtered_df['last_30_day_sale']
+        
+        # Add adjusted risk revenue columns to filtered_df
+        for col in existing_risk_columns:
+            # Check if the risk column value is not zero and replace it with revenue_per_sale if so
+            filtered_df[col] = filtered_df.apply(
+                lambda row: revenue_per_sale[row.name] if row[col] != 0 else row[col],
+                axis=1
+            )
+
+        # Merge adjusted risk columns into the target_df
+        adjusted_columns = existing_risk_columns
+        target_df = target_df.merge(
+            filtered_df[['product_variant_id', 'warehouse'] + adjusted_columns],
+            on=['product_variant_id', 'warehouse'],
+            how='left'
+        )
+
     except KeyError as e:
         st.write(f"KeyError: {e}")
     
     return target_df
+
+
+def summarize_risk_revenues(putaway_df, sto_df, rto_df, return_df):
+    # Summarize the risk revenues for each dataset
+    summary_data = {
+        "Pending Putaway Data": {
+            "no_risk_rev": putaway_df['No Risk Revenue'].sum(),
+            "OOS_risk_rev": putaway_df['Revenue at OOS Risk'].sum(),
+            "NRF_risk_rev": putaway_df['Revenue at NRF Risk'].sum(),
+            "FUD_risk_rev": putaway_df['Revenue at FUD Risk'].sum()
+        },
+        "STO Transit Data": {
+            "no_risk_rev": sto_df['No Risk Revenue'].sum(),
+            "OOS_risk_rev": sto_df['Revenue at OOS Risk'].sum(),
+            "NRF_risk_rev": sto_df['Revenue at NRF Risk'].sum(),
+            "FUD_risk_rev": sto_df['Revenue at FUD Risk'].sum()
+        },
+        "RTO Transit Data": {
+            "no_risk_rev": rto_df['No Risk Revenue'].sum(),
+            "OOS_risk_rev": rto_df['Revenue at OOS Risk'].sum(),
+            "NRF_risk_rev": rto_df['Revenue at NRF Risk'].sum(),
+            "FUD_risk_rev": rto_df['Revenue at FUD Risk'].sum()
+        },
+        "Pending Return Check-in Data": {
+            "no_risk_rev": return_df['No Risk Revenue'].sum(),
+            "OOS_risk_rev": return_df['Revenue at OOS Risk'].sum(),
+            "NRF_risk_rev": return_df['Revenue at NRF Risk'].sum(),
+            "FUD_risk_rev": return_df['Revenue at FUD Risk'].sum()
+        }
+    }
+
+    summary_df = pd.DataFrame.from_dict(summary_data, orient='index').reset_index()
+    summary_df.columns = ['Action', 'no_risk_rev', 'OOS_risk_rev', 'NRF_risk_rev', 'FUD_risk_rev']
+    
+    return summary_df
+
 
 
 if __name__ == "__main__":
@@ -213,87 +265,113 @@ if __name__ == "__main__":
     # Generate filtered tables
     tables = generate_filtered_tables(filtered_df)
 
-    tab1, tab2, tab3 = st.tabs(["Overview","Risk Type", "Actions"])
+    tab1, tab2, tab3, tab4 = st.tabs(["Overview","Risk Type", "Actions", "Raw Data"])
      # Fetch cached data
+    
+    putaway_with_risk = add_risk_revenues(filtered_putaway_df,filtered_df)
+    sto_with_risk = add_risk_revenues(filtered_sto_df,filtered_df)
+    rto_with_risk = add_risk_revenues( filtered_rto_df,filtered_df)
+    return_with_risk = add_risk_revenues( filtered_return_df,filtered_df)
 
 
     with tab1:
 
-        st.title("Streamlit Risk Revenue Calculations")
+        st.title("Risk Revenues")
 
-        # Dashboard Main Panel Arrangement
-        col = st.columns((1, 1, 1), gap='medium')
+        # tab1 metric Arrangement
+        col = st.columns((1, 1, 1, 1), gap='medium')
 
         with col[0]:
-
             # Current Inventory
-            st.metric(label="Current Inventory", value=f"{df['available_inventory'].sum()} Units")
-
+            st.metric(label="Current Inventory", value=f"{(filtered_df['available_inventory']).sum():.0f} Units")
+            # Net No Risk Revenue as a percentage
             if net_revenues['Net Revenue'] != 0:
-                # Net OOS Risk Revenue as a percentage
+                st.metric(label="Net No Risk Revenue", value=f"{(net_revenues['Net_NO_risk_rev'] * 100 / net_revenues['Net Revenue']):.2f}%")
+            else:
+                st.metric(label="Net No Risk Revenue", value="0%", delta="No Revenue")
+
+        with col[1]:
+            # Current Inventory Price
+            st.metric(label="Current Inventory Price", value=f"{(filtered_df['available_inventory'] * filtered_df['last_30_day_revenue'] / filtered_df['last_30_day_sale']).sum():.2f} Rs")
+            # Net OOS Risk Revenue as a percentage
+            if net_revenues['Net Revenue'] != 0:
                 st.metric(label="Net OOS Risk Revenue", value=f"{(net_revenues['Net_OOS_risk_rev'] * 100 / net_revenues['Net Revenue']):.2f}%")
             else:
                 st.metric(label="Net OOS Risk Revenue", value="0%", delta="No Revenue")
 
-        with col[1]:
-
+        with col[2]:
             # Projected Daily Demand
-            st.metric(label="Projected Daily Demand", value=f"{(df['last_30_day_sale'].sum())/30:.0f} Units")
-
+            st.metric(label="Projected Daily Demand", value=f"{(filtered_df['last_30_day_sale'].sum()) / 30:.0f} Units")
+            # Net NRF Risk Revenue as a percentage
             if net_revenues['Net Revenue'] != 0:
-                # Net NRF Risk Revenue as a percentage
                 st.metric(label="Net NRF Risk Revenue", value=f"{(net_revenues['Net_NRF_risk_rev'] * 100 / net_revenues['Net Revenue']):.2f}%")
             else:
                 st.metric(label="Net NRF Risk Revenue", value="0%", delta="No Revenue")
 
-        with col[2]:
-
+        with col[3]:
+            # Current Inventory Days
+            st.metric(label="Current Inventory Days", value=f"{((filtered_df['available_inventory'] - filtered_df['booked_quantity']) * 30 / filtered_df['last_30_day_sale']).mean():.2f} Days")
+            # Net FUD Risk Revenue as a percentage
             if net_revenues['Net Revenue'] != 0:
-                # Net No Risk Revenue as a percentage
-                st.metric(label="Net No Risk Revenue", value=f"{(net_revenues['Net_NO_risk_rev'] * 100 / net_revenues['Net Revenue']):.2f}%")
-                
-                # Net FUD Risk Revenue as a percentage
                 st.metric(label="Net FUD Risk Revenue", value=f"{(net_revenues['Net_FUD_risk_rev'] * 100 / net_revenues['Net Revenue']):.2f}%")
             else:
-                st.metric(label="Net No Risk Revenue", value="0%", delta="No Revenue")
                 st.metric(label="Net FUD Risk Revenue", value="0%", delta="No Revenue")
 
-        st.subheader("Inventory Dashboard - Pivot Table")
+                st.subheader("Inventory Dashboard - Pivot Table")
 
         # Display Pivot Table based on selection
         pivot_table_dashboard(filtered_df)
 
-         # Plot the inventory chart
+        st.subheader("Risk Revenue by Pending Action Table")
+
+        # Generate the summary table
+        risk_summary = summarize_risk_revenues(putaway_with_risk, sto_with_risk, rto_with_risk, return_with_risk)
+
+        # Display the summary table
+        st.dataframe(risk_summary)
+
+        # Plot the inventory chart
         plot_inventory_chart(filtered_inventory)  
 
     with tab2:
         
+        # Iterate through each risk table and its corresponding net revenue
         for title, table_df in tables.items():
-            st.subheader(title)
-            st.dataframe(table_df)  # Display dataframe
+            # Create columns for table and net revenue
+            col = st.columns((2, 1), gap='medium')
 
-        
-        # Optionally display the raw data with new columns
-        st.write("Raw Data from Redshift with Risk Revenues:", df)
-    
+            # Left column: Display the table
+            with col[0]:
+                st.subheader(title)
+                st.dataframe(table_df)
+
+            # Right column: Display the corresponding net revenue
+            with col[1]:
+                if title == "Revenue at OOS Risk":
+                    st.metric(label="Net OOS Risk Revenue", value=f"{net_revenues['Net_OOS_risk_rev']:.0f} Rs")
+                elif title == "Revenue at NRF Risk":
+                    st.metric(label="Net NRF Risk Revenue", value=f"{net_revenues['Net_NRF_risk_rev']:.0f} Rs")
+                elif title == "Revenue at FUD Risk":
+                    st.metric(label="Net FUD Risk Revenue", value=f"{net_revenues['Net_FUD_risk_rev']:.0f} Rs")
+
     with tab3:
 
         # Add risk revenue columns to Putaway Data
         st.subheader("Pending Putaway Data")
-        putaway_with_risk = add_risk_revenues(filtered_putaway_df,filtered_df)
         st.dataframe(putaway_with_risk)
 
         # Add risk revenue columns to STO Transit Data
         st.subheader("STO Transit Data")
-        sto_with_risk = add_risk_revenues(filtered_sto_df,filtered_df)
         st.dataframe(sto_with_risk)
 
         # Add risk revenue columns to RTO Transit Data
         st.subheader("RTO Transit Data")
-        rto_with_risk = add_risk_revenues( filtered_rto_df,filtered_df)
         st.dataframe(rto_with_risk)
 
         # Add risk revenue columns to Pending Return Check-in Data
         st.subheader("Pending Return Check-in Data")
-        return_with_risk = add_risk_revenues( filtered_return_df,filtered_df)
         st.dataframe(return_with_risk)
+    
+    with tab4:
+        # Optionally display the raw data with new columns
+        st.write("Raw Data from Redshift with Risk Revenues:", df)
