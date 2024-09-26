@@ -108,15 +108,15 @@ def generate_filtered_tables(filtered_df):
     
     if filtered_df['Revenue at OOS Risk'].gt(0).any():
         oos_risk_df = filtered_df[filtered_df['Revenue at OOS Risk'] > 0][['product_variant_id', 'warehouse', 'Revenue at OOS Risk']]
-        dataframes['Revenue at OOS Risk'] = oos_risk_df
+        dataframes['Revenue at OOS Risk'] = oos_risk_df.sort_values(by='Revenue at OOS Risk', ascending=False)
     
     if filtered_df['Revenue at NRF Risk'].gt(0).any():
         nrf_risk_df = filtered_df[filtered_df['Revenue at NRF Risk'] > 0][['product_variant_id', 'warehouse', 'Revenue at NRF Risk']]
-        dataframes['Revenue at NRF Risk'] = nrf_risk_df
+        dataframes['Revenue at NRF Risk'] = nrf_risk_df.sort_values(by='Revenue at NRF Risk', ascending=False)
 
     if filtered_df['Revenue at FUD Risk'].gt(0).any():
         fud_risk_df = filtered_df[filtered_df['Revenue at FUD Risk'] > 0][['product_variant_id', 'warehouse', 'Revenue at FUD Risk']]
-        dataframes['Revenue at FUD Risk'] = fud_risk_df
+        dataframes['Revenue at FUD Risk'] = fud_risk_df.sort_values(by='Revenue at FUD Risk', ascending=False)
     
     return dataframes
 
@@ -125,7 +125,7 @@ def pivot_table_dashboard(df):
     df['Projected Daily Demand'] = (df['last_30_day_sale'] / 30).round(2)
 
     # User selects whether to group by Brand, Warehouse, or Channel
-    pivot_option = st.selectbox("Select Pivot Category", ['brand', 'warehouse', 'channel'])
+    pivot_option = st.selectbox("Select Pivot Category", ['warehouse','brand', 'channel'])
 
     # Create Pivot Table
     pivot_df = pd.pivot_table(
@@ -182,7 +182,8 @@ def add_risk_revenues(target_df, filtered_df):
 
     try:
         # Calculate the revenue per sale
-        revenue_per_sale = filtered_df['last_30_day_revenue'] / filtered_df['last_30_day_sale']
+        revenue_per_sale = (filtered_df['last_30_day_revenue'] / filtered_df['last_30_day_sale']).round(2)
+        
         
         # Add adjusted risk revenue columns to filtered_df
         for col in existing_risk_columns:
