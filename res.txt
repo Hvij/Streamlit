@@ -1,0 +1,82 @@
+**[Your Name]**  
+[Your Email] | [Your Phone] | [Your LinkedIn] | [Your GitHub]
+
+---
+
+### **Professional Summary**  
+Results-driven **Data Analyst & Engineer** with expertise in **real-time data processing, dashboard development, and automation**. Experienced in building **high-performance analytics platforms**, optimizing **data pipelines**, and leveraging **modern data engineering frameworks**. Strong background in **Python, SQL, Apache Flink, Kafka, Elasticsearch, and Streamlit**. Passionate about **real-time analytics, inventory management, and process automation**.
+
+---
+
+### **Technical Skills**  
+- **Programming:** Python (Pandas, NumPy, Streamlit), SQL, Bash, Java (basic)  
+- **Data Engineering:** Apache Flink, Kafka, MySQL CDC, Redshift, Elasticsearch  
+- **Dashboarding & Visualization:** Streamlit, Kibana, Quicksight, Metabase, Plotly, Pydeck  
+- **Automation & Workflow Tools:** n8n, Google Sheets API, AWS Secrets Manager  
+- **Cloud & DevOps:** AWS (Redshift, S3), Docker, Ubuntu, Linux Administration  
+- **Big Data & Storage:** Parquet, Data Lakes, Real-time Data Pipelines  
+
+---
+
+### **Work Experience**  
+#### **[Your Company]** – Data Analyst & Engineer *(Dates of Employment)*  
+
+##### **Inventory Dashboard (Streamlit + Redshift)**  
+**Problem:** Business teams lacked a **combined inventory view**, making it difficult to identify high-priority issues and assess the impact of logistics problems.  
+**Action:** Developed a **real-time inventory dashboard** integrating **inventory risk, fulfillment tracking, and sales insights**. Created **automated risk classifications (OOS, NRF, FUD)** and prioritized actions based on **revenue impact**.  
+**Outcome:** 
+- Reduced **stockouts by 30%** and **misrouted orders by 20%**.  
+- Provided a **clear impact view**, reducing **excess inventory storage from 180Cr to 140Cr**.  
+- Enabled **real-time monitoring**, allowing proactive decision-making.
+
+##### **Data Sharing Portal (Streamlit + n8n)**  
+**Problem:** All data requests were **manually processed**, taking **1-2 hours per request**, while data validation and cleaning consumed **2-3 hours** when receiving datasets from other teams.  
+**Action:** Built a **self-serve data request and sharing portal** with role-based access control, **automated data validation**, and integrated **Google Sheets for tracking requests**.  
+**Outcome:** 
+- Saved **10-12 hours per week** for the analytics team by automating data handling.  
+- Implemented **access control** at the **report and request level**, ensuring data security.  
+- Maintained **detailed logs** of all user actions, improving transparency and governance.
+
+##### **Real-Time Orders Dashboard (MySQL -> PyFlink -> Kafka -> Elasticsearch -> Kibana)**  
+**Problem:** Business teams struggled to track **errors and order fulfillment delays**, with an **average delay of 40-50 minutes** before identifying issues.  
+**Action:** Developed a **real-time order monitoring dashboard**, streaming **MySQL CDC data into Elasticsearch** using **PyFlink and Kafka**. Created **Kibana visualizations** to provide immediate visibility into orders and business metrics.  
+**Outcome:** 
+- Reduced **order tracking delays from 40-50 minutes to 1-2 minutes**.  
+- Enabled **instant detection of business errors**, allowing for rapid corrective action.  
+- Provided a **live view of orders and fulfillment**, improving operational efficiency.
+
+##### **Automated Reporting System (Google Sheets + Metabase)**  
+**Problem:** The operations and logistics team spent **10+ hours daily** manually generating reports, impacting productivity and slowing down decision-making.  
+**Action:** Automated **30+ reports** using **Google Sheets scripting and Metabase**, integrating **real-time data pulls** and reducing reliance on manual updates.  
+**Outcome:** 
+- Saved **10+ man-hours per day**, significantly improving efficiency.  
+- Gained **deep insights into operations and logistics**, enabling better collaboration.  
+- Provided **automated, error-free reports**, increasing accuracy and trust in data.
+
+##### **Interactive Dashboards on Quicksight**  
+**Problem:** Root Cause Analysis (RCA) and metric tracking were time-consuming due to a lack of interactive, drill-down views.  
+**Action:** Designed **multiple Quicksight dashboards** with **deep-level metric tracking**, enabling **faster RCA, improved analytics visibility, and enhanced data-driven decisions**.  
+**Outcome:** 
+- Enabled **faster issue detection and resolution** across various business areas.  
+- Improved **data accessibility**, making analytics more intuitive for non-technical users.  
+- Provided a **scalable analytics solution** that streamlined business performance tracking.
+
+---
+
+### **Education**  
+[Your Degree] – [Your University] *(Year of Graduation)*
+
+---
+
+### **Certifications & Training**  
+- Apache Flink for Real-Time Data Processing *(Ongoing/Completed)*
+- AWS Certified Solutions Architect *(If applicable)*
+- Google Data Analytics Professional Certificate *(If applicable)*
+
+---
+
+### **Additional Information**  
+- Experienced in **Ubuntu & Linux system administration** for efficient workflow.  
+- Passionate about **real-time analytics, process automation, and data-driven decision-making**.
+- Always exploring **new technologies in data engineering and cloud platforms**.
+
